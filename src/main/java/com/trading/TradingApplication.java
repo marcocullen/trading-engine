@@ -25,17 +25,53 @@ public class TradingApplication {
     private static final Logger logger = LoggerFactory.getLogger(TradingApplication.class);
 
     // FTSE 100 stocks to monitor
-    private static final List<String> FTSE_STOCKS = List.of(
-            "SHEL.L",    // Shell
-            "AZN.L",     // AstraZeneca
-            "HSBA.L",    // HSBC
-            "ULVR.L",    // Unilever
-            "BP.L",      // BP
-            "DGE.L",     // Diageo
-            "GSK.L",     // GSK
-            "RIO.L",     // Rio Tinto
-            "BATS.L",    // British American Tobacco
-            "NG.L"       // National Grid
+    private static final List<String> TRADING_UNIVERSE = List.of(
+            // ========== UK LARGE-CAPS (FTSE 100) ==========
+            "SHEL.L",    // Shell (Energy)
+            "AZN.L",     // AstraZeneca (Healthcare)
+            "HSBA.L",    // HSBC (Banking)
+            "ULVR.L",    // Unilever (Consumer)
+            "BP.L",      // BP (Energy)
+            "DGE.L",     // Diageo (Consumer)
+            "GSK.L",     // GSK (Healthcare)
+            "RIO.L",     // Rio Tinto (Mining)
+            "BATS.L",    // British American Tobacco (Consumer)
+            "NG.L",      // National Grid (Utilities)
+
+            // ========== BROAD MARKET ETFS ==========
+            "VUKE.L",    // Vanguard FTSE 100 (UK large-cap)
+            "VMID.L",    // Vanguard FTSE 250 (UK mid-cap growth)
+            "VUSA.L",    // Vanguard S&P 500 (US exposure)
+            "VWRL.L",    // Vanguard All-World (global diversification)
+            "VEUR.L",    // Vanguard FTSE Europe (European exposure)
+
+            // ========== SECTOR/THEMATIC ETFS ==========
+            "IITU.L",    // iShares MSCI World Tech (technology)
+            "IUKD.L",    // iShares UK Dividend (income/defensive)
+            "INRG.L",    // iShares Clean Energy (thematic growth)
+            "IUHC.L",    // iShares Healthcare (defensive sector)
+
+            // ========== COMMODITIES & REAL ASSETS ==========
+            "SGLN.L",    // iShares Physical Gold (safe haven)
+            "IGLT.L",    // iShares UK Gilts (bonds, defensive)
+            "IPRP.L",    // iShares UK Property REIT (real estate)
+            "CRUD.L",    // WisdomTree Crude Oil (energy commodity)
+
+            // ========== UK GROWTH STOCKS ==========
+            "OCDO.L",    // Ocado (tech/retail innovation)
+            "AUTO.L",    // Auto Trader (digital marketplace)
+            "LSEG.L",    // London Stock Exchange (fintech)
+            "EXPN.L",    // Experian (data analytics)
+            "REL.L",     // RELX (information/tech)
+            "RKT.L",     // Reckitt (consumer health)
+            "DCC.L",     // DCC (diversified growth)
+            "MNDI.L",    // Mondi (packaging/materials)
+
+            // ========== INTERNATIONAL QUALITY ==========
+            "BRBY.L",    // Burberry (luxury consumer)
+            "AAL.L",     // Anglo American (mining diversification)
+            "BARC.L",    // Barclays (banking alternative to HSBC)
+            "VOD.L"      // Vodafone (telecoms)
     );
 
     public static void main(String[] args) {
@@ -61,7 +97,7 @@ public class TradingApplication {
             logger.info("Fetching market data from {} to {}", startDate, endDate);
 
             // Step 1: Fetch market data
-            for (String symbol : FTSE_STOCKS) {
+            for (String symbol : TRADING_UNIVERSE) {
                 try {
                     logger.info("Processing {}", symbol);
 
@@ -84,12 +120,12 @@ public class TradingApplication {
 
             // ========== ADD THESE LINES (Step 2: Calculate Indicators) ==========
             logger.info("\n=== Calculating Technical Indicators ===");
-            indicatorService.calculateForSymbols(FTSE_STOCKS);
+            indicatorService.calculateForSymbols(TRADING_UNIVERSE);
             // ====================================================================
 
             // ========== ADD THESE LINES (Step 3: Display Summaries) ==========
             logger.info("\n=== Indicator Summaries ===");
-            for (String symbol : FTSE_STOCKS) {
+            for (String symbol : TRADING_UNIVERSE) {
                 try {
                     IndicatorService.IndicatorSummary summary =
                             indicatorService.getLatestIndicatorSummary(symbol);
@@ -105,13 +141,13 @@ public class TradingApplication {
             SignalGenerator signalGenerator = new SignalGenerator(indicatorService, marketDataRepo);
 
             // Generate signals for all stocks
-            List<TradingSignal> allSignals = signalGenerator.generateSignals(FTSE_STOCKS);
+            List<TradingSignal> allSignals = signalGenerator.generateSignals(TRADING_UNIVERSE);
 
             // Print full report
             signalGenerator.printSignalReport(allSignals);
 
             // Get top buy opportunities
-            List<TradingSignal> topBuys = signalGenerator.getTopBuySignals(FTSE_STOCKS, 3);
+            List<TradingSignal> topBuys = signalGenerator.getTopBuySignals(TRADING_UNIVERSE, 3);
             if (!topBuys.isEmpty()) {
                 logger.info("\n🎯 Top 3 Buy Opportunities:");
                 for (int i = 0; i < topBuys.size(); i++) {
@@ -135,7 +171,7 @@ public class TradingApplication {
             );
 
             // Calculate position sizes for tradeable signals
-            List<TradingSignal> tradeableSignals = signalGenerator.getTradeableSignals(FTSE_STOCKS);
+            List<TradingSignal> tradeableSignals = signalGenerator.getTradeableSignals(TRADING_UNIVERSE);
             logger.info("Found {} tradeable signals (score >= 60)", tradeableSignals.size());
 
             if (!tradeableSignals.isEmpty()) {
