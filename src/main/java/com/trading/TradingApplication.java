@@ -26,52 +26,148 @@ public class TradingApplication {
 
     // FTSE 100 stocks to monitor
     private static final List<String> TRADING_UNIVERSE = List.of(
-            // ========== UK LARGE-CAPS (FTSE 100) ==========
-            "SHEL.L",    // Shell (Energy)
-            "AZN.L",     // AstraZeneca (Healthcare)
-            "HSBA.L",    // HSBC (Banking)
-            "ULVR.L",    // Unilever (Consumer)
-            "BP.L",      // BP (Energy)
-            "DGE.L",     // Diageo (Consumer)
-            "GSK.L",     // GSK (Healthcare)
-            "RIO.L",     // Rio Tinto (Mining)
-            "BATS.L",    // British American Tobacco (Consumer)
-            "NG.L",      // National Grid (Utilities)
+            // ========== FTSE 100 LARGE-CAPS (Top 50 by liquidity) ==========
+            // Energy
+            "SHEL.L", "BP.L", "ENT.L",
 
-            // ========== BROAD MARKET ETFS ==========
-            "VUKE.L",    // Vanguard FTSE 100 (UK large-cap)
-            "VMID.L",    // Vanguard FTSE 250 (UK mid-cap growth)
-            "VUSA.L",    // Vanguard S&P 500 (US exposure)
-            "VWRL.L",    // Vanguard All-World (global diversification)
-            "VEUR.L",    // Vanguard FTSE Europe (European exposure)
+            // Financials & Banking
+            "HSBA.L", "LLOY.L", "BARC.L", "NWG.L", "STAN.L", "LSEG.L", "III.L", "PRU.L",
+//            "AVIV.L",
 
-            // ========== SECTOR/THEMATIC ETFS ==========
-            "IITU.L",    // iShares MSCI World Tech (technology)
-            "IUKD.L",    // iShares UK Dividend (income/defensive)
-            "INRG.L",    // iShares Clean Energy (thematic growth)
-            "IUHC.L",    // iShares Healthcare (defensive sector)
+            // Healthcare & Pharma
+            "AZN.L", "GSK.L", "DGE.L", "RKT.L", "OCDO.L",
 
-            // ========== COMMODITIES & REAL ASSETS ==========
-            "SGLN.L",    // iShares Physical Gold (safe haven)
-            "IGLT.L",    // iShares UK Gilts (bonds, defensive)
-            "IPRP.L",    // iShares UK Property REIT (real estate)
-            "CRUD.L",    // WisdomTree Crude Oil (energy commodity)
+            // Consumer Goods & Retail
+            "ULVR.L", "DGE.L", "BATS.L", "ABF.L", "SBRY.L", "TSCO.L", "MKS.L", "BRBY.L", "NXT.L",
 
-            // ========== UK GROWTH STOCKS ==========
-            "OCDO.L",    // Ocado (tech/retail innovation)
-            "AUTO.L",    // Auto Trader (digital marketplace)
-            "LSEG.L",    // London Stock Exchange (fintech)
-            "EXPN.L",    // Experian (data analytics)
-            "REL.L",     // RELX (information/tech)
-            "RKT.L",     // Reckitt (consumer health)
-            "DCC.L",     // DCC (diversified growth)
-            "MNDI.L",    // Mondi (packaging/materials)
+            // Mining & Materials
+            "RIO.L", "AAL.L", "GLEN.L", "MNDI.L", "CRH.L", "ANTO.L",
 
-            // ========== INTERNATIONAL QUALITY ==========
-            "BRBY.L",    // Burberry (luxury consumer)
-            "AAL.L",     // Anglo American (mining diversification)
-            "BARC.L",    // Barclays (banking alternative to HSBC)
-            "VOD.L"      // Vodafone (telecoms)
+            // Utilities & Infrastructure
+            "NG.L", "SSE.L",
+//            "SCTN.L",
+            "UU.L", "SVT.L",
+
+            // Technology & Services
+            "REL.L", "EXPN.L", "AUTO.L", "SAGE.L", "CRDA.L",
+
+            // Telecoms & Media
+            "VOD.L", "BT-A.L", "WPP.L",
+
+            // Real Estate & Construction
+            "LAND.L", "PSN.L",
+//            "SEGRO.L",
+            "BNZL.L",
+
+            // Aerospace & Defense
+            "BA.L", "RR.L",
+
+            // ========== UK BROAD MARKET ETFS ==========
+            "VUKE.L",    // Vanguard FTSE 100
+            "VMID.L",    // Vanguard FTSE 250
+            "VHYL.L",    // Vanguard UK High Dividend Yield
+            "ISF.L",     // iShares Core FTSE 100
+            "IUKD.L",    // iShares UK Dividend
+//            "VMUK.L",    // Vanguard FTSE All-Share
+
+            // ========== US & NORTH AMERICA ETFS ==========
+            "VUSA.L",    // Vanguard S&P 500
+            "VUAG.L",    // Vanguard S&P 500 Accumulation
+            "CSP1.L",    // iShares Core S&P 500
+            "IITU.L",    // iShares MSCI World Tech
+//            "QDVX.L",    // iShares NASDAQ 100
+            "ISPY.L",    // iShares S&P 500 Tech Sector
+            "IUHC.L",    // iShares S&P 500 Healthcare
+            "IUFS.L",    // iShares S&P 500 Financials
+
+            // ========== GLOBAL & INTERNATIONAL ETFS ==========
+            "VWRL.L",    // Vanguard All-World
+            "VWRP.L",    // Vanguard All-World Accumulation
+            "SWDA.L",    // iShares Core MSCI World
+            "IWQU.L",    // iShares MSCI World Quality Factor
+            "IGWD.L",    // iShares MSCI World Value Factor
+
+            // ========== EUROPE ETFS ==========
+            "VEUR.L",    // Vanguard FTSE Europe
+            "VERX.L",    // Vanguard European ex-UK
+//            "IEUE.L",    // iShares Core MSCI Europe
+            "VMEU.L",    // Vanguard EUR Eurozone
+
+            // ========== ASIA & EMERGING MARKETS ==========
+            "VFEM.L",    // Vanguard Emerging Markets
+            "EMIM.L",    // iShares Core MSCI EM IMI
+            "VJPN.L",    // Vanguard Japan
+//            "VCHA.L",    // Vanguard China
+//            "CSI1.L",    // iShares China Large Cap
+//            "ISPA.L",    // iShares MSCI Pacific ex-Japan
+
+            // ========== SECTOR & THEMATIC ETFS ==========
+            // Technology & Innovation
+            "IITU.L",    // World Tech (duplicate but key)
+            "RBTX.L",    // iShares Automation & Robotics
+//            "IDRV.L",    // iShares Electric Vehicles
+
+            // Clean Energy & ESG
+            "INRG.L",    // iShares Clean Energy
+//            "DHER.L",    // L&G Hydrogen Economy
+            "RENW.L",    // VanEck Low Carbon Energy
+
+            // Healthcare & Biotech
+            "HEAL.L",    // Lyxor Healthcare
+            "SBIO.L",    // SPDR S&P Biotech
+
+            // Consumer & Retail
+            "ISPY.L",    // Consumer Tech
+
+            // Financials & Banks
+//            "SUBFIN.L",  // European Financials
+
+            // ========== COMMODITIES & ALTERNATIVES ==========
+            // Gold
+            "SGLN.L",    // iShares Physical Gold
+            "PHGP.L",    // WisdomTree Physical Gold
+            "SGLP.L",    // iShares Gold Producers
+
+            // Silver & Precious Metals
+            "SSLN.L",    // iShares Physical Silver
+//            "PALL.L",    // WisdomTree Physical Palladium
+//            "PPLT.L",    // WisdomTree Physical Platinum
+
+            // Energy Commodities
+            "CRUD.L",    // WisdomTree Crude Oil
+            "AIGA.L",    // WisdomTree Natural Gas
+
+            // Agriculture
+            "AIGA.L",    // Agriculture
+
+            // Broad Commodities
+            "AIGC.L",    // WisdomTree Enhanced Commodity
+
+            // ========== BONDS & FIXED INCOME ==========
+            // UK Government Bonds
+            "IGLT.L",    // iShares UK Gilts 0-5yr
+            "GILS.L",    // iShares UK Gilts All Stocks
+            "IGLH.L",    // iShares UK Gilts 15-25yr (long duration)
+
+            // UK Corporate Bonds
+            "SLXX.L",    // iShares Core £ Corporate Bond
+            "VGOV.L",    // Vanguard UK Government Bond
+
+            // Global Bonds
+            "VAGP.L",    // Vanguard Global Aggregate Bond
+            "VAGS.L",    // Vanguard Global Short-Term Bond
+
+            // High Yield
+            "GHYG.L",    // iShares Global High Yield Corporate Bond
+
+            // ========== REAL ESTATE & INFRASTRUCTURE ==========
+            "IPRP.L",    // iShares UK Property
+            "TREI.L",    // WisdomTree Global Quality Real Estate
+//            "SUST.L",    // iShares Global Infrastructure
+
+            // ========== CURRENCY HEDGED (for GBP investors) ==========
+            "IGUS.L",    // iShares S&P 500 GBP Hedged
+            "IGWD.L"     // iShares World GBP Hedged
     );
 
     public static void main(String[] args) {

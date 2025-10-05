@@ -31,6 +31,8 @@ public class PositionSizer {
      * Calculate position size for a trading signal
      */
     public PositionSize calculatePositionSize(TradingSignal signal) {
+        logger.info("Processing signal: {} | Score: {} | Price: £{}",
+                signal.symbol(), signal.score(), signal.currentPrice());
         BigDecimal positionValue = switch (strategy) {
             case FIXED_PERCENTAGE -> calculateFixedPercentage(signal);
             case RISK_BASED -> calculateRiskBased(signal);

@@ -38,7 +38,9 @@ public class IndicatorService {
             new ExponentialMovingAverage(26),
             new ExponentialMovingAverage(50),
             new MACD(),                    // Standard MACD (12,26,9)
-            new RSI()                      // Standard RSI (14)
+            new RSI(),                     // Standard RSI (14)
+            new RateOfChange(10),          // 10-day ROC (momentum)
+            new RateOfChange(5)            // 5-day ROC (short-term momentum)
         );
     }
     
@@ -107,10 +109,12 @@ public class IndicatorService {
         IndicatorResult sma200 = indicatorRepo.getLatest(symbol, "SMA_200");
         IndicatorResult rsi = indicatorRepo.getLatest(symbol, "RSI_14");
         IndicatorResult macd = indicatorRepo.getLatest(symbol, "MACD_12_26_9");
-        
-        return new IndicatorSummary(symbol, sma20, sma50, sma200, rsi, macd);
+        IndicatorResult roc10 = indicatorRepo.getLatest(symbol, "ROC_10");
+        IndicatorResult roc5 = indicatorRepo.getLatest(symbol, "ROC_5");
+
+        return new IndicatorSummary(symbol, sma20, sma50, sma200, rsi, macd, roc10, roc5);
     }
-    
+
     /**
      * Summary of key indicators for a symbol
      */
@@ -120,7 +124,9 @@ public class IndicatorService {
         IndicatorResult sma50,
         IndicatorResult sma200,
         IndicatorResult rsi,
-        IndicatorResult macd
+        IndicatorResult macd,
+        IndicatorResult roc10,
+        IndicatorResult roc5
     ) {
         /**
          * Get a simple trend signal based on moving averages
@@ -129,7 +135,7 @@ public class IndicatorService {
             if (sma20 == null || sma50 == null) {
                 return "INSUFFICIENT_DATA";
             }
-            
+
             // Golden Cross: SMA20 > SMA50 → Bullish
             // Death Cross: SMA20 < SMA50 → Bearish
             if (sma20.value().compareTo(sma50.value()) > 0) {
@@ -140,7 +146,7 @@ public class IndicatorService {
                 return "NEUTRAL";
             }
         }
-        
+
         /**
          * Get RSI interpretation
          */
@@ -150,7 +156,7 @@ public class IndicatorService {
             }
             return RSI.interpret(rsi.value());
         }
-        
+
         /**
          * Print summary to console
          */
@@ -170,6 +176,13 @@ public class IndicatorService {
             }
             if (macd != null) {
                 System.out.printf("MACD:     %.4f%n", macd.value());
+            }
+            if (roc10 != null) {
+                System.out.printf("ROC(10):  %.2f%% [%s]%n", roc10.value(),
+                    RateOfChange.interpret(roc10.value()));
+            }
+            if (roc5 != null) {
+                System.out.printf("ROC(5):   %.2f%%%n", roc5.value());
             }
             System.out.printf("Trend:    %s%n", getTrendSignal());
             System.out.println("================================");
