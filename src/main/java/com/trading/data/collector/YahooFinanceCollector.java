@@ -19,10 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Collects market data from Yahoo Finance API
- * Uses the unofficial Yahoo Finance v8 API
- */
 public class YahooFinanceCollector implements DataCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(YahooFinanceCollector.class);
@@ -32,36 +28,26 @@ public class YahooFinanceCollector implements DataCollector {
 
     public YahooFinanceCollector() {
         this.httpClient = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build();
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
     }
 
-    /**
-     * Fetch historical market data for a symbol
-     *
-     * @param symbol The ticker symbol (use .L suffix for LSE stocks, e.g., "SHEL.L")
-     * @param startDate Start date for historical data
-     * @param endDate End date for historical data
-     * @return List of MarketData objects
-     */
     @Override
     public List<MarketData> fetchHistoricalData(String symbol, LocalDate startDate, LocalDate endDate) {
         logger.info("Fetching historical data for {} from {} to {}", symbol, startDate, endDate);
 
         try {
-            long period1 = startDate.atStartOfDay(ZoneId.of("Europe/London"))
-                                   .toEpochSecond();
-            long period2 = endDate.atStartOfDay(ZoneId.of("Europe/London"))
-                                 .toEpochSecond();
+            long period1 = startDate.atStartOfDay(ZoneId.of("Europe/London")).toEpochSecond();
+            long period2 = endDate.atStartOfDay(ZoneId.of("Europe/London")).toEpochSecond();
 
             String url = String.format("%s%s?period1=%d&period2=%d&interval=1d&events=history",
-                                      BASE_URL, symbol, period1, period2);
+                    BASE_URL, symbol, period1, period2);
 
             Request request = new Request.Builder()
-                .url(url)
-                .addHeader("User-Agent", "Mozilla/5.0")
-                .build();
+                    .url(url)
+                    .addHeader("User-Agent", "Mozilla/5.0")
+                    .build();
 
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
@@ -78,13 +64,10 @@ public class YahooFinanceCollector implements DataCollector {
         }
     }
 
-    /**
-     * Fetch the latest market data (most recent trading day)
-     */
     @Override
     public MarketData fetchLatestData(String symbol) {
         LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusDays(7); // Get last week to ensure we have data
+        LocalDate startDate = endDate.minusDays(7);
 
         List<MarketData> data = fetchHistoricalData(symbol, startDate, endDate);
 
@@ -92,12 +75,9 @@ public class YahooFinanceCollector implements DataCollector {
             throw new RuntimeException("No market data available for " + symbol);
         }
 
-        return data.get(data.size() - 1); // Return most recent
+        return data.get(data.size() - 1);
     }
 
-    /**
-     * Parse Yahoo Finance JSON response into MarketData objects
-     */
     private List<MarketData> parseYahooResponse(String symbol, String jsonResponse) {
         List<MarketData> marketDataList = new ArrayList<>();
 
@@ -106,14 +86,14 @@ public class YahooFinanceCollector implements DataCollector {
             JsonObject chart = root.getAsJsonObject("chart");
             JsonArray results = chart.getAsJsonArray("result");
 
-            if (results.isEmpty()) {
+            if (results.size() == 0) {
                 logger.warn("No data returned for symbol: {}", symbol);
                 return marketDataList;
             }
 
             JsonObject result = results.get(0).getAsJsonObject();
 
-            // ========== ADD THIS: Extract currency from meta ==========
+            // Extract currency to detect pence vs pounds
             JsonObject meta = result.getAsJsonObject("meta");
             String currency = meta.has("currency") ? meta.get("currency").getAsString() : "GBP";
             boolean isPence = currency.equals("GBp");
@@ -121,10 +101,7 @@ public class YahooFinanceCollector implements DataCollector {
 
             logger.info("Symbol {} currency: {} (conversion factor: {})", symbol, currency, conversionFactor);
 
-            // Get timestamp array
             JsonArray timestamps = result.getAsJsonArray("timestamp");
-
-            // Get indicators
             JsonObject indicators = result.getAsJsonObject("indicators");
             JsonArray quotes = indicators.getAsJsonArray("quote");
             JsonObject quote = quotes.get(0).getAsJsonObject();
@@ -135,7 +112,6 @@ public class YahooFinanceCollector implements DataCollector {
             JsonArray closes = quote.getAsJsonArray("close");
             JsonArray volumes = quote.getAsJsonArray("volume");
 
-            // Get adjusted close if available
             JsonArray adjustedCloses = null;
             if (indicators.has("adjclose")) {
                 JsonArray adjcloseArray = indicators.getAsJsonArray("adjclose");
@@ -144,7 +120,6 @@ public class YahooFinanceCollector implements DataCollector {
                 }
             }
 
-            // Parse each data point
             for (int i = 0; i < timestamps.size(); i++) {
                 if (opens.get(i).isJsonNull() || highs.get(i).isJsonNull() ||
                         lows.get(i).isJsonNull() || closes.get(i).isJsonNull()) {
@@ -156,13 +131,11 @@ public class YahooFinanceCollector implements DataCollector {
                         .atZone(ZoneId.of("Europe/London"))
                         .toLocalDate();
 
-                // ========== APPLY CONVERSION ==========
+                // Convert pence to pounds if needed
                 Price open = Price.of(opens.get(i).getAsDouble() / conversionFactor);
                 Price high = Price.of(highs.get(i).getAsDouble() / conversionFactor);
                 Price low = Price.of(lows.get(i).getAsDouble() / conversionFactor);
                 Price close = Price.of(closes.get(i).getAsDouble() / conversionFactor);
-                // ======================================
-
                 long volume = volumes.get(i).isJsonNull() ? 0L : volumes.get(i).getAsLong();
 
                 Price adjustedClose = close;
@@ -177,7 +150,8 @@ public class YahooFinanceCollector implements DataCollector {
                 marketDataList.add(marketData);
             }
 
-            logger.info("Successfully parsed {} data points for {}", marketDataList.size(), symbol);
+            logger.info("Successfully parsed {} data points for {} ({})",
+                    marketDataList.size(), symbol, currency);
 
         } catch (Exception e) {
             logger.error("Failed to parse Yahoo Finance response: {}", e.getMessage());
@@ -188,9 +162,6 @@ public class YahooFinanceCollector implements DataCollector {
     }
 }
 
-/**
- * Interface for data collectors
- */
 interface DataCollector {
     List<MarketData> fetchHistoricalData(String symbol, LocalDate startDate, LocalDate endDate);
     MarketData fetchLatestData(String symbol);

@@ -15,13 +15,13 @@ import java.util.Optional;
  * Repository for market data persistence and retrieval
  */
 public class MarketDataRepository {
-    
+
     private final DataSource dataSource;
-    
+
     public MarketDataRepository(DataSource dataSource) {
         this.dataSource = dataSource;
     }
-    
+
     /**
      * Save market data for a given symbol and date
      */
@@ -39,10 +39,10 @@ public class MarketDataRepository {
                 adjusted_close = EXCLUDED.adjusted_close,
                 volume = EXCLUDED.volume
             """;
-        
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, marketData.symbol());
             stmt.setDate(2, Date.valueOf(marketData.date()));
             stmt.setBigDecimal(3, marketData.open().value());
@@ -51,14 +51,14 @@ public class MarketDataRepository {
             stmt.setBigDecimal(6, marketData.close().value());
             stmt.setBigDecimal(7, marketData.adjustedClose().value());
             stmt.setLong(8, marketData.volume());
-            
+
             stmt.executeUpdate();
-            
+
         } catch (SQLException e) {
             throw new RuntimeException("Failed to save market data for " + marketData.symbol(), e);
         }
     }
-    
+
     /**
      * Save multiple market data records in batch
      */
@@ -76,12 +76,12 @@ public class MarketDataRepository {
                 adjusted_close = EXCLUDED.adjusted_close,
                 volume = EXCLUDED.volume
             """;
-        
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             conn.setAutoCommit(false);
-            
+
             for (MarketData md : marketDataList) {
                 stmt.setString(1, md.symbol());
                 stmt.setDate(2, Date.valueOf(md.date()));
@@ -93,15 +93,15 @@ public class MarketDataRepository {
                 stmt.setLong(8, md.volume());
                 stmt.addBatch();
             }
-            
+
             stmt.executeBatch();
             conn.commit();
-            
+
         } catch (SQLException e) {
             throw new RuntimeException("Failed to save market data batch", e);
         }
     }
-    
+
     /**
      * Find market data for a specific symbol and date
      */
@@ -112,26 +112,26 @@ public class MarketDataRepository {
             FROM market_data
             WHERE symbol = ? AND trade_date = ?
             """;
-        
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, symbol);
             stmt.setDate(2, Date.valueOf(date));
-            
+
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return Optional.of(mapToMarketData(rs));
             }
-            
+
             return Optional.empty();
-            
+
         } catch (SQLException e) {
             throw new RuntimeException("Failed to find market data", e);
         }
     }
-    
+
     /**
      * Get historical market data for a symbol within a date range
      */
@@ -143,29 +143,29 @@ public class MarketDataRepository {
             WHERE symbol = ? AND trade_date BETWEEN ? AND ?
             ORDER BY trade_date ASC
             """;
-        
+
         List<MarketData> results = new ArrayList<>();
-        
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, symbol);
             stmt.setDate(2, Date.valueOf(startDate));
             stmt.setDate(3, Date.valueOf(endDate));
-            
+
             ResultSet rs = stmt.executeQuery();
-            
+
             while (rs.next()) {
                 results.add(mapToMarketData(rs));
             }
-            
+
             return results;
-            
+
         } catch (SQLException e) {
             throw new RuntimeException("Failed to fetch historical market data", e);
         }
     }
-    
+
     /**
      * Get the most recent N trading days for a symbol
      */
@@ -178,29 +178,28 @@ public class MarketDataRepository {
             ORDER BY trade_date DESC
             LIMIT ?
             """;
-        
+
         List<MarketData> results = new ArrayList<>();
-        
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, symbol);
             stmt.setInt(2, limit);
-            
+
             ResultSet rs = stmt.executeQuery();
-            
+
             while (rs.next()) {
                 results.add(mapToMarketData(rs));
             }
-            
-            // Reverse to get chronological order
+
             return results.reversed();
-            
+
         } catch (SQLException e) {
             throw new RuntimeException("Failed to fetch recent market data", e);
         }
     }
-    
+
     /**
      * Get the latest closing price for a symbol
      */
@@ -212,37 +211,98 @@ public class MarketDataRepository {
             ORDER BY trade_date DESC
             LIMIT 1
             """;
-        
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, symbol);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return Optional.of(new Price(rs.getBigDecimal("close_price")));
             }
-            
+
             return Optional.empty();
-            
+
         } catch (SQLException e) {
             throw new RuntimeException("Failed to get latest price", e);
         }
     }
-    
+
+    /**
+     * Get latest volume for a symbol
+     */
+    public Optional<Long> getLatestVolume(String symbol) {
+        String sql = """
+            SELECT volume
+            FROM market_data
+            WHERE symbol = ?
+            ORDER BY trade_date DESC
+            LIMIT 1
+            """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, symbol);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return Optional.of(rs.getLong("volume"));
+            }
+            return Optional.empty();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get latest volume", e);
+        }
+    }
+
+    /**
+     * Get average volume over N days
+     */
+    public Optional<Long> getAverageVolume(String symbol, int days) {
+        String sql = """
+            SELECT AVG(volume) as avg_volume
+            FROM (
+                SELECT volume
+                FROM market_data
+                WHERE symbol = ?
+                ORDER BY trade_date DESC
+                LIMIT ?
+            ) recent
+            """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, symbol);
+            stmt.setInt(2, days);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                long avg = rs.getLong("avg_volume");
+                return avg > 0 ? Optional.of(avg) : Optional.empty();
+            }
+            return Optional.empty();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get average volume", e);
+        }
+    }
+
     /**
      * Map ResultSet to MarketData domain object
      */
     private MarketData mapToMarketData(ResultSet rs) throws SQLException {
         return new MarketData(
-            rs.getString("symbol"),
-            rs.getDate("trade_date").toLocalDate(),
-            new Price(rs.getBigDecimal("open_price")),
-            new Price(rs.getBigDecimal("high_price")),
-            new Price(rs.getBigDecimal("low_price")),
-            new Price(rs.getBigDecimal("close_price")),
-            new Price(rs.getBigDecimal("adjusted_close")),
-            rs.getLong("volume")
+                rs.getString("symbol"),
+                rs.getDate("trade_date").toLocalDate(),
+                new Price(rs.getBigDecimal("open_price")),
+                new Price(rs.getBigDecimal("high_price")),
+                new Price(rs.getBigDecimal("low_price")),
+                new Price(rs.getBigDecimal("close_price")),
+                new Price(rs.getBigDecimal("adjusted_close")),
+                rs.getLong("volume")
         );
     }
 }
